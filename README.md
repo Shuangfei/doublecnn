@@ -37,10 +37,14 @@ python main.py -filter_shape 64,4,4, 2,2 64,4,4 2,2 64,4,4 2,2 -doubleconv 1 -ke
 
 The training log is automatically saved at the ./logs directory, named by the dataset.
 
-Examples of experiments:
+Examplar experiments:
+
 1. python main.py -dataset cifar10 -doubleconv 0 -filter_shape 128,3,3 128,3,3 2,2 128,3,3 128,3,3 2,2 128,3,3 128,3,3 2,2
+
   This should yield an error rate of 10+%
+
 2. python main.py -dataset cifar10 -doubleconv 1 -filter_shape 128,4,4 128,4,4 2,2 128,4,4 128,4,4 2,2 128,4,4 128,4,4 2,2 -kernel_size 3 -kernel_pool_size -1
+
   This should produce a model with the same shape (w.r.t. #layers and #neurons per layer), and a corresponding error rate or ~9%.
   
 
