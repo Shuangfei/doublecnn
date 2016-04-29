@@ -45,6 +45,6 @@ Examplar experiments:
 
 2. python main.py -dataset cifar10 -doubleconv 1 -filter_shape 128,4,4 128,4,4 2,2 128,4,4 128,4,4 2,2 128,4,4 128,4,4 2,2 -kernel_size 3 -kernel_pool_size -1
 
-  This should produce a model with the same shape (w.r.t. #layers and #neurons per layer), and a corresponding error rate or ~9%.
+  This should produce a model with the same shape (w.r.t. #layers and #neurons per layer), and a corresponding error rate of ~9%.
   
 
