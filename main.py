@@ -112,7 +112,7 @@ class Model:
             activation = lasagne.nonlinearities.rectify
             convlayer = DoubleConvLayer if doubleconv else layers.Conv2DLayer
             if len(filter_shape[l]) == 3:
-                if doubleconv:
+                if doubleconv and filter_shape[l][1] > kernel_size:
                     this_layer = DoubleConvLayer(this_layer,
                                                  filter_shape[l][0],
                                                  filter_shape[l][1:],
