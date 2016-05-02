@@ -82,14 +82,15 @@ class DoubleConvLayer(layers.conv.BaseConvLayer):
         else:
             n = self.n_times / (self.pool_size**2)
         return (input_shape[0], self.num_filters * n) + input_shape[2:]
-        
+
+    
 class Model:
     def __init__(
         self,
         image_shape,
         filter_shape,
         num_class,
-        doubleconv,
+        conv_type,
         kernel_size,
         kernel_pool_size,
     ):
@@ -110,23 +111,60 @@ class Model:
 
         for l in range(self.n_layers):
             activation = lasagne.nonlinearities.rectify
-            convlayer = DoubleConvLayer if doubleconv else layers.Conv2DLayer
             if len(filter_shape[l]) == 3:
-                if doubleconv and filter_shape[l][1] > kernel_size:
+                if conv_type == 'double' and filter_shape[l][1] > kernel_size:
                     this_layer = DoubleConvLayer(this_layer,
                                                  filter_shape[l][0],
                                                  filter_shape[l][1:],
                                                  pad='same',
                                                  nonlinearity=activation,
+
                                                  kernel_size=kernel_size,
                                                  kernel_pool_size=kernel_pool_size)
-                else:
+                    this_layer = layers.batch_norm(this_layer)
+                elif conv_type == 'maxout':
+                    this_layer = layers.Conv2DLayer(this_layer,
+                                                    filter_shape[l][0],
+                                                    filter_shape[l][1:],
+                                                    b=None,
+                                                    pad='same',
+                                                    nonlinearity=None)
+                    this_layer = layers.FeaturePoolLayer(this_layer, pool_size=kernel_pool_size**2)
+                    this_layer = layers.BatchNormLayer(this_layer)
+                    this_layer = layers.NonlinearityLayer(this_layer, activation)
+
+                elif conv_type == 'cyclic':
+                    this_layers = []
+                    this_layers.append(layers.Conv2DLayer(this_layer,
+                                                          filter_shape[l][0],
+                                                          filter_shape[l][1:],
+                                                          b=None,
+                                                          pad='same',
+                                                          nonlinearity=None)
+                    )
+                    for _ in range(3):
+                        W = this_layers[-1].W.dimshuffle(0, 1, 3, 2)[:, :, :, ::-1]
+                        this_layers.append(layers.Conv2DLayer(this_layer,
+                                                              filter_shape[l][0],
+                                                              filter_shape[l][1:],
+                                                              W=W,
+                                                              b=None,
+                                                              pad='same',
+                                                              nonlinearity=None)
+                        )
+                    this_layer = layers.ElemwiseMergeLayer(this_layers, T.maximum)
+                    this_layer = layers.BatchNormLayer(this_layer)
+                    this_layer = layers.NonlinearityLayer(this_layer, activation)
+
+                elif conv_type == 'standard' or conv_type == 'double':
                     this_layer = layers.Conv2DLayer(this_layer,
                                                     filter_shape[l][0],
                                                     filter_shape[l][1:],
                                                     pad='same',
                                                     nonlinearity=activation)
-                this_layer = layers.batch_norm(this_layer)
+                    this_layer = layers.batch_norm(this_layer)
+                else:
+                    raise NotImplementedError
 
             elif len(filter_shape[l]) == 2:
                 this_layer = layers.MaxPool2DLayer(this_layer, filter_shape[l])
@@ -200,7 +238,7 @@ parser.add_argument('-batch_size', type=int, default=200)
 parser.add_argument('-load_model', type=int, default=0)
 parser.add_argument('-save_model', type=str, default='model_saved.npz')
 parser.add_argument('-train_on_valid', type=int, default=1)
-parser.add_argument('-doubleconv', type=int, default=0)
+parser.add_argument('-conv_type', type=str, default='standard')
 
 if __name__ == '__main__':
     args = parser.parse_args()
@@ -216,7 +254,7 @@ if __name__ == '__main__':
     load_model = opt['load_model']
     save_model = opt['save_model']
     train_on_valid = opt['train_on_valid']
-    doubleconv = opt['doubleconv']
+    conv_type = opt['conv_type']
 
     if save_model is not 'none':
         saveto = './saved/' + dataset + '_' + save_model
@@ -269,7 +307,7 @@ if __name__ == '__main__':
         image_shape=image_shape,
         filter_shape=filter_shape,
         num_class=num_class,
-        doubleconv=doubleconv,
+        conv_type=conv_type,
         kernel_size=kernel_size,
         kernel_pool_size=kernel_pool_size
     )
