@@ -47,19 +47,19 @@ The training log is automatically saved at the ./logs directory, named by the da
 
 Examplar experiments:
 
-1. python main.py -dataset cifar10 -conv_type standard -filter_shape 128,3,3 128,3,3 2,2 128,3,3 128,3,3 2,2 128,3,3 128,3,3 2,2
+1. python main.py -dataset cifar10 -conv_type standard -filter_shape 128,3,3 128,3,3 2,2 128,3,3 128,3,3 2,2 128,3,3 128,3,3 2,2 -save_model standard.npz
 
   This should yield an error rate of 10+%
 
-2. python main.py -dataset cifar10 -conv_type double -filter_shape 128,4,4 128,4,4 2,2 128,4,4 128,4,4 2,2 128,4,4 128,4,4 2,2 -kernel_size 3 -kernel_pool_size -1
+2. python main.py -dataset cifar10 -conv_type double -filter_shape 128,4,4 128,4,4 2,2 128,4,4 128,4,4 2,2 128,4,4 128,4,4 2,2 -kernel_size 3 -kernel_pool_size -1 -save_model doubleconv.npz
 
   This should produce a model with the same shape (w.r.t. #layers and #neurons per layer), and a corresponding error rate of ~9%.
 
-3. python main.py -dataset cifar10 -conv_type maxout -filter_shape 512,3,3 512,3,3 2,2 512,3,3 512,3,3 2,2 512,3,3 512,3,3 2,2 -kernel_pool_size 2
+3. python main.py -dataset cifar10 -conv_type maxout -filter_shape 512,3,3 512,3,3 2,2 512,3,3 512,3,3 2,2 512,3,3 512,3,3 2,2 -kernel_pool_size 2 -save_model maxout.npz
 
    This should run a maxout network with effecitve layer size of 128 (512 / 2^2)
 
-4. python main.py -dataset cifar10 -conv_type cyclic -filter_shape 128,3,3 128,3,3 2,2 128,3,3 128,3,3 2,2 128,3,3 128,3,3 2,2
+4. python main.py -dataset cifar10 -conv_type cyclic -filter_shape 128,3,3 128,3,3 2,2 128,3,3 128,3,3 2,2 128,3,3 128,3,3 2,2 -save_model cyclic.npz
 
    This runs a cyclic cnn with the same effective layer size as above.
   
