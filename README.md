@@ -45,7 +45,7 @@ python main.py -filter_shape 64,4,4, 2,2 64,4,4 2,2 64,4,4 2,2 -doubleconv 1 -ke
 
 The training log is automatically saved at the ./logs directory, named by the dataset.
 
-Examplar experiments:
+Experiments I:
 
 1. python main.py -dataset cifar10 -conv_type standard -filter_shape 128,3,3 128,3,3 2,2 128,3,3 128,3,3 2,2 128,3,3 128,3,3 2,2 -save_model standard.npz
 
@@ -66,3 +66,14 @@ Examplar experiments:
 5. python main.py -dataset cifar10 -conv_type double -filter_shape 32,6,6 32,6,6 2,2 32,6,6 32,6,6 2,2 32,6,6 32,6,6 2,2 -kernel_size 3 -kernel_pool_size 2 -save_model doubleconv2.npz
 
   This runs another version of doublecnn, whereas even larger feature maps are used (6x6), combined with spatial pooling along large feature maps. This setting produces a model with the same effective shape 32x(6-3+1)^2/2^2=128, and with the same #parameters compared to the standard cnn (32x128x6x6 vs 128x128x3x3).  
+  
+Experiments II:
+
+This set of experiments is aimed to try the effect of doubleconv in different layers (low, middle, high).
+Note: when -conv_type is double and filter size is less or equal than kernel_size, the corresponding layer falls back to standard convlayer.
+
+1. python main.py -dataset cifar10 -conv_type double -filter_shape 128,4,4 128,4,4 2,2 128,3,3 128,3,3 2,2 128,3,3 128,3,3 2,2 -kernel_size 3 -kernel_pool_size -1 -save_model doubleconv_low.npz
+
+2. python main.py -dataset cifar10 -conv_type double -filter_shape 128,3,3 128,3,3 2,2 128,4,4 128,4,4 2,2 128,3,3 128,3,3 2,2 -kernel_size 3 -kernel_pool_size -1 -save_model doubleconv_mid.npz
+
+3. python main.py -dataset cifar10 -conv_type double -filter_shape 128,3,3 128,3,3 2,2 128,3,3 128,3,3 2,2 128,4,4 128,4,4 2,2 -kernel_size 3 -kernel_pool_size -1 -save_model doubleconv_mid.npz
