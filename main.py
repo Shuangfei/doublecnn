@@ -104,6 +104,8 @@ class Model:
         self.x = T.matrix()
         self.y = T.ivector()
 
+        self.conv_layers = []
+
         NoiseLayer = layers.DropoutLayer
 
         self.l_input = layers.InputLayer((None, self.n_visible), self.x)
@@ -118,7 +120,6 @@ class Model:
                                                  filter_shape[l][1:],
                                                  pad='same',
                                                  nonlinearity=activation,
-
                                                  kernel_size=kernel_size,
                                                  kernel_pool_size=kernel_pool_size)
                     this_layer = layers.batch_norm(this_layer)
@@ -156,7 +157,8 @@ class Model:
                     this_layer = layers.BatchNormLayer(this_layer)
                     this_layer = layers.NonlinearityLayer(this_layer, activation)
 
-                elif conv_type == 'standard' or conv_type == 'double':
+                elif conv_type == 'standard' \
+                     or (conv_type == 'double' and filter_shape[l][1] <= kernel_size):
                     this_layer = layers.Conv2DLayer(this_layer,
                                                     filter_shape[l][0],
                                                     filter_shape[l][1:],
@@ -166,12 +168,14 @@ class Model:
                 else:
                     raise NotImplementedError
 
+                self.conv_layers.append(this_layer)
+
             elif len(filter_shape[l]) == 2:
                 this_layer = layers.MaxPool2DLayer(this_layer, filter_shape[l])
                 this_layer = NoiseLayer(this_layer, 0.5)
             elif len(filter_shape[l]) == 1:
                 raise NotImplementedError
-
+                
         self.top_conv_layer = this_layer
         this_layer = layers.GlobalPoolLayer(this_layer, T.mean)
         self.clf_layer = layers.DenseLayer(this_layer,
@@ -200,6 +204,24 @@ class Model:
 
         return fn
 
+    def build_vis(self, l, gamma, lr):
+        conv_layer = self.conv_layers[l]
+        nonlinearity = conv_layer.nonlinearity
+        conv_layer.nonlinearity = lasagne.nonlinearities.identity
+        output_shape = layers.get_output_shape(conv_layer)
+        self.x_shared = theano.shared(numpy.zeros((output_shape[1], self.n_visible)).astype('float32'))
+        conv_out = layers.get_output(conv_layer, inputs=self.x_shared, deterministic=True)
+        idx = output_shape[2] / 2
+        cost = -T.sum(conv_out[:, :, idx, idx].diagonal()) + \
+               gamma * T.sum(self.x_shared**2)
+        updates = lasagne.updates.adadelta(cost, [self.x_shared], learning_rate=lr)
+        fn['train'] = theano.function([], cost, updates=updates)
+
+        conv_layer.nonlinearity = nonlinearity
+
+        return fn
+
+
     def save_model(self, saveto='model_saved.npz'):
         pp = [tp.get_value() for tp in self.params_all]
         numpy.savez(saveto, pp=pp)
@@ -226,6 +248,16 @@ def save_images(X, file_name, image_shape=(28, 28), tile_shape=(10, 10), color=F
 def Shape(s):
     return tuple(map(int, s.split(',')))
 
+def vis_units(model, layer, gamma, lr, image_shape, train_epochs):
+    fn = model.build_vis(layer, gamma, lr)
+    for epoch in range(train_epochs):
+        cost = fn['train']()
+        print 'epoch: ', epoch, 'cost: ', cost
+    x = model.x_shared.get_value()
+    save_images(x, './plots/pseudo_filters.png', image_shape, tile_shape=(20,20), color=True)
+
+    return x
+    
 parser = argparse.ArgumentParser()
 parser.add_argument('-dataset', type=str, default='cifar10')
 parser.add_argument('-train_epochs', type=int, default=100)
@@ -389,7 +421,7 @@ if __name__ == '__main__':
     if train_errors:
         print 'best errors:', train_errors[best_valid_edix], best_valid, test_errors[best_valid_edix]
 
-    if saveto:
+    if saveto and train_epochs:
         print 'saving model ...'
         best_model.save_model(saveto)
 
