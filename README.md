@@ -79,6 +79,7 @@ Note: when -conv_type is double and filter size is less or equal than kernel_siz
 3. python main.py -dataset cifar10 -conv_type double -filter_shape 128,3,3 128,3,3 2,2 128,3,3 128,3,3 2,2 128,4,4 128,4,4 2,2 -kernel_size 3 -kernel_pool_size -1 -save_model doubleconv_mid.npz
 
 Experiments III:
+
 0. #5 from Experiments I.
 
 1. python main.py -dataset cifar10 -conv_type double -filter_shape 16,6,6 16,6,6 2,2 16,6,6 16,6,6 2,2 16,6,6 16,6,6 2,2 -kernel_size 3 -kernel_pool_size 1 -save_model doubleconv3_1.npz
