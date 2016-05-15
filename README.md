@@ -82,8 +82,8 @@ Experiments III:
 
 1. python main.py -dataset cifar10 -conv_type double -filter_shape 16,6,6 16,6,6 2,2 16,6,6 16,6,6 2,2 16,6,6 16,6,6 2,2 -kernel_size 3 -kernel_pool_size 1 -save_model doubleconv3_1.npz
 
-same #parameters, larger model
+  same #parameters, larger model
 
 2.  python main.py -dataset cifar10 -conv_type double -filter_shape 4,10,10 4,10,10 2,2 4,10,10 4,10,10 2,2 4,10,10 4,10,10 2,2 -kernel_size 3 -kernel_pool_size 1 -save_model doubleconv3_2.npz
 
-less #parameters, larger model
+  less #parameters, larger model
