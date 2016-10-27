@@ -58,14 +58,6 @@ Experiments I:
 3. python main.py -dataset cifar10 -conv_type maxout -filter_shape 512,3,3 512,3,3 2,2 512,3,3 512,3,3 2,2 512,3,3 512,3,3 2,2 -kernel_pool_size 2 -save_model maxout.npz
 
    This should run a maxout network with effecitve layer size of 128 (512 / 2^2)
-
-4. python main.py -dataset cifar10 -conv_type cyclic -filter_shape 128,3,3 128,3,3 2,2 128,3,3 128,3,3 2,2 128,3,3 128,3,3 2,2 -save_model cyclic.npz
-
-   This runs a cyclic cnn with the same effective layer size as above.
-  
-5. python main.py -dataset cifar10 -conv_type double -filter_shape 32,6,6 32,6,6 2,2 32,6,6 32,6,6 2,2 32,6,6 32,6,6 2,2 -kernel_size 3 -kernel_pool_size 2 -save_model doubleconv2.npz
-
-  This runs another version of doublecnn, whereas even larger feature maps are used (6x6), combined with spatial pooling along large feature maps. This setting produces a model with the same effective shape 32x(6-3+1)^2/2^2=128, and with the same #parameters compared to the standard cnn (32x128x6x6 vs 128x128x3x3).  
   
 Experiments II:
 
