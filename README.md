@@ -53,7 +53,7 @@ Possible parameters are:
    -learning decay rate: decaying learning rate when the validation error stops decreasing 
 
 
-Experiments I:
+Experiments I on cifar10 (the hyper-parameters listed are optimal ones for each setting)
 
 1. python main.py -dataset cifar10 -conv_type standard -filter_shape 128,3,3 128,3,3 2,2 128,3,3 128,3,3 2,2 128,3,3 128,3,3 2,2 128,3,3 128,3,3 2,2 -save_model standard.npz
 (dropout rate=0.5, learning decay rate=0.5, -train_epochs=150)
@@ -71,3 +71,18 @@ Experiments I:
 (dropout rate=0.6, learning decay rate=0.7, -train_epochs=150)
 
    This should run a maxout network with effecitve layer size of 128 (512 / 2^2), and a corresponding error rate of ~9.6%.
+
+
+Experiments II:
+
+This set of experiments is aimed to try the effect of doubleconv in different layers (first, second, third, fourth).
+Note: when -conv_type is double and filter size is less or equal than kernel_size, the corresponding layer falls back to standard convlayer.
+(dropout rate=0.5, learning decay rate=0.5, -train_epochs=150)
+
+1. python main.py -dataset cifar10 -conv_type double -filter_shape 128,4,4 128,4,4 2,2 128,3,3 128,3,3 2,2 128,3,3 128,3,3 2,2 128,3,3 128,3,3 2,2 -kernel_size 3 -kernel_pool_size -1 -save_model doubleconv_first.npz
+
+2. python main.py -dataset cifar10 -conv_type double -filter_shape 128,3,3 128,3,3 2,2 128,4,4 128,4,4 2,2 128,3,3 128,3,3 2,2 128,3,3 128,3,3 2,2 -kernel_size 3 -kernel_pool_size -1 -save_model doubleconv_second.npz
+
+3. python main.py -dataset cifar10 -conv_type double -filter_shape 128,3,3 128,3,3 2,2 128,3,3 128,3,3 2,2 128,4,4 128,4,4 2,2 128,3,3 128,3,3 2,2 -kernel_size 3 -kernel_pool_size -1 -save_model doubleconv_third.npz
+
+4. python main.py -dataset cifar10 -conv_type double -filter_shape 128,3,3 128,3,3 2,2 128,3,3 128,3,3 2,2 128,3,3 128,3,3 128,4,4 128,4,4 2,2 2,2 -kernel_size 3 -kernel_pool_size -1 -save_model doubleconv_fourth.npz
