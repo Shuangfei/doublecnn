@@ -22,6 +22,25 @@ try:
 except:
     import Image
 
+
+class BreakLayer(lasagne.layers.Layer):
+    def __init__(self, incoming, **kwargs):
+        super(BreakLayer, self).__init__(incoming, **kwargs)
+    	nonlinearity = getattr(incoming, 'nonlinearity', None)
+        #if nonlinearity is not None:
+            #raise NotImplementedError('input layer for BreakLayer must not have nonlinearity!')
+
+    def get_output_shape_for(self, input_shape):
+        output_shape = list(input_shape)
+        output_shape[1] = 2 * output_shape[1]
+        return tuple(output_shape)
+
+    def get_output_for(self, input, **kwargs):
+        pos = T.maximum(input, 0)
+        neg = T.minimum(input, 0)
+        return T.concatenate([pos, neg], axis=1)
+
+
 class DoubleConvLayer(layers.conv.BaseConvLayer):
     def __init__(self, incoming, num_filters, filter_size, stride=(1,1),
                  pad=0, untie_biases=False, kernel_size=3, kernel_pool_size=1,
@@ -69,6 +88,7 @@ class DoubleConvLayer(layers.conv.BaseConvLayer):
         elif self.pool_size != 1:
             this_shape = (input.shape[0] * self.num_filters,) + (self.filter_offset,)*2 \
                          + (numpy.prod(self.input_shape[2:]),)
+
             output = T.reshape(output, this_shape).dimshuffle(0, 3, 1, 2)
             output = T.signal.pool.pool_2d(output, (self.pool_size,)*2, ignore_border=True)
             this_shape = (input.shape[0], -1) + self.input_shape[2:]
@@ -93,6 +113,7 @@ class Model:
         conv_type,
         kernel_size,
         kernel_pool_size,
+        dropout_rate,
     ):
         """
 
@@ -108,21 +129,25 @@ class Model:
 
         NoiseLayer = layers.DropoutLayer
 
+        dropout_rate = float(dropout_rate)
+
         self.l_input = layers.InputLayer((None, self.n_visible), self.x)
         this_layer = layers.ReshapeLayer(self.l_input, ([0],) + image_shape)
 
         for l in range(self.n_layers):
-            activation = lasagne.nonlinearities.rectify
+            #activation = None;
             if len(filter_shape[l]) == 3:
                 if conv_type == 'double' and filter_shape[l][1] > kernel_size:
                     this_layer = DoubleConvLayer(this_layer,
                                                  filter_shape[l][0],
                                                  filter_shape[l][1:],
                                                  pad='same',
-                                                 nonlinearity=activation,
+                                                 nonlinearity=None,
                                                  kernel_size=kernel_size,
                                                  kernel_pool_size=kernel_pool_size)
                     this_layer = layers.batch_norm(this_layer)
+                    this_layer = BreakLayer(this_layer)
+
                 elif conv_type == 'maxout':
                     this_layer = layers.Conv2DLayer(this_layer,
                                                     filter_shape[l][0],
@@ -132,7 +157,8 @@ class Model:
                                                     nonlinearity=None)
                     this_layer = layers.FeaturePoolLayer(this_layer, pool_size=kernel_pool_size**2)
                     this_layer = layers.BatchNormLayer(this_layer)
-                    this_layer = layers.NonlinearityLayer(this_layer, activation)
+                    this_layer = BreakLayer(this_layer)
+                    #this_layer = layers.NonlinearityLayer(this_layer, activation)
 
                 elif conv_type == 'cyclic':
                     this_layers = []
@@ -155,7 +181,8 @@ class Model:
                         )
                     this_layer = layers.ElemwiseMergeLayer(this_layers, T.maximum)
                     this_layer = layers.BatchNormLayer(this_layer)
-                    this_layer = layers.NonlinearityLayer(this_layer, activation)
+                    #this_layer = layers.NonlinearityLayer(this_layer, activation)
+                    this_layer = BreakLayer(this_layer)
 
                 elif conv_type == 'standard' \
                      or (conv_type == 'double' and filter_shape[l][1] <= kernel_size):
@@ -163,8 +190,9 @@ class Model:
                                                     filter_shape[l][0],
                                                     filter_shape[l][1:],
                                                     pad='same',
-                                                    nonlinearity=activation)
+                                                    nonlinearity=None)
                     this_layer = layers.batch_norm(this_layer)
+                    this_layer = BreakLayer(this_layer)
                 else:
                     raise NotImplementedError
 
@@ -172,7 +200,7 @@ class Model:
 
             elif len(filter_shape[l]) == 2:
                 this_layer = layers.MaxPool2DLayer(this_layer, filter_shape[l])
-                this_layer = NoiseLayer(this_layer, 0.5)
+                this_layer = NoiseLayer(this_layer, dropout_rate)
             elif len(filter_shape[l]) == 1:
                 raise NotImplementedError
                 
@@ -260,7 +288,7 @@ def vis_units(model, layer, gamma, lr, image_shape, train_epochs):
     
 parser = argparse.ArgumentParser()
 parser.add_argument('-dataset', type=str, default='cifar10')
-parser.add_argument('-train_epochs', type=int, default=100)
+parser.add_argument('-train_epochs', type=int, default=150)
 parser.add_argument('-patience', type=int, default=10)
 parser.add_argument('-lr', type=numpy.float32, default=1e0)
 parser.add_argument('-filter_shape', type=Shape, nargs='+', default=[(64, 3, 3), (2,2)])
@@ -271,6 +299,10 @@ parser.add_argument('-load_model', type=int, default=0)
 parser.add_argument('-save_model', type=str, default='model_saved.npz')
 parser.add_argument('-train_on_valid', type=int, default=1)
 parser.add_argument('-conv_type', type=str, default='standard')
+parser.add_argument('-learning_decay', type=str, default=0.5)
+parser.add_argument('-dropout_rate', type=str, default=0.5)
+
+
 
 if __name__ == '__main__':
     args = parser.parse_args()
@@ -287,6 +319,9 @@ if __name__ == '__main__':
     save_model = opt['save_model']
     train_on_valid = opt['train_on_valid']
     conv_type = opt['conv_type']
+    dropout_rate = opt['dropout_rate']
+    learning_decay = opt['learning_decay']
+
 
     if save_model is not 'none':
         saveto = './saved/' + dataset + '_' + save_model
@@ -341,7 +376,8 @@ if __name__ == '__main__':
         num_class=num_class,
         conv_type=conv_type,
         kernel_size=kernel_size,
-        kernel_pool_size=kernel_pool_size
+        kernel_pool_size=kernel_pool_size,
+        dropout_rate=dropout_rate       
     )
 
     if loadfrom:
@@ -413,7 +449,7 @@ if __name__ == '__main__':
             bad_count += 1
             if bad_count > patience:
                 print 'reducing learnig rate!'
-                lr *= 0.5
+                lr *= 0.7
                 bad_count = 0
         print 'epoch ', eidx, train_error, valid_error, test_error
 
