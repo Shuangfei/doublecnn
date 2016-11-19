@@ -424,7 +424,7 @@ if __name__ == '__main__':
             bad_count += 1
             if bad_count > patience:
                 print 'reducing learnig rate!'
-                lr *= learning_decay
+                lr = lr*float(learning_decay)
                 bad_count = 0
         print 'epoch ', eidx, train_error, valid_error, test_error
 
