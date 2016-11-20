@@ -60,12 +60,12 @@ Experiments I on cifar10 (the hyper-parameters listed are optimal ones for each 
    This should yield an error rate around ~9.8%
 
 
-2. python main.py -dataset cifar10 -conv_type double -filter_shape 128,4,4 128,4,4 2,2 128,4,4 128,4,4 2,2 128,4,4 128,4,4 2,2 128,4,4 128,4,4 2,2 -kernel_size 3 -kernel_pool_size -1 -save_model doubleconv.npz -learning_decay 0.8 -dropout_rate 0.6 -train_epochs=150
+2. python main.py -dataset cifar10 -conv_type double -filter_shape 128,4,4 128,4,4 2,2 128,4,4 128,4,4 2,2 128,4,4 128,4,4 2,2 128,4,4 128,4,4 2,2 -kernel_size 3 -kernel_pool_size -1 -save_model doubleconv.npz -learning_decay 0.7 -dropout_rate 0.6
 
    This should produce a model with the same shape (w.r.t. #layers and #neurons per layer), and a corresponding error rate of ~8.6%.
 
 
-3. python main.py -dataset cifar10 -conv_type maxout -filter_shape 512,3,3 512,3,3 2,2 512,3,3 512,3,3 2,2 512,3,3 512,3,3 2,2 -kernel_pool_size 2 -save_model maxout.npz -learning_decay 0.7 -dropout_rate 0.6 -train_epochs=150
+3. python main.py -dataset cifar10 -conv_type maxout -filter_shape 512,3,3 512,3,3 2,2 512,3,3 512,3,3 2,2 512,3,3 512,3,3 2,2 -kernel_pool_size 2 -save_model maxout.npz -learning_decay 0.7 -dropout_rate 0.6
 
    This should run a maxout network with effecitve layer size of 128 (512 / 2^2), and a corresponding error rate of ~9.6%.
 
